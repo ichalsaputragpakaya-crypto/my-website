@@ -1,0 +1,263 @@
+!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absensi Digital Realtime - SMA 8 Gorontalo Utara</title>
+    <!-- Tailwind CSS Standalone CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- QR Code Generator Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800">
+
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white shadow-lg py-4 px-6 mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-xl font-bold tracking-wide">Absensi Digital Realtime</h1>
+            <p class="text-xs text-indigo-200">SMA 8 Gorontalo Utara</p>
+        </div>
+        <div id="role-badge" class="bg-indigo-800 text-xs px-3 py-1 rounded-full font-semibold text-indigo-100 shadow">
+            Modus: Guru (Laptop)
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 pb-12">
+        
+        <!-- LAYAR GURU (Laptop) -->
+        <div id="teacher-view" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Kartu QR Code -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center text-center">
+                <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full mb-4">
+                    ✓ Sesi Presensi AKTIF
+                </span>
+                
+                <div class="bg-slate-50 p-4 rounded-xl border border-dashed border-slate-300 mb-4 inline-block">
+                    <div id="qrcode" class="flex justify-center"></div>
+                </div>
+
+                <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-left w-full text-xs text-indigo-900 mb-4">
+                    <p class="font-bold mb-1">📱 Petunjuk Siswa:</p>
+                    <ol class="list-decimal list-inside space-y-1 text-slate-600">
+                        <li>Buka Kamera / Scan QR di HP</li>
+                        <li>Scan QR Code di atas</li>
+                        <li>Isi Nama Lengkap & NIS lalu kirim</li>
+                    </ol>
+                </div>
+
+                <button onclick="resetAttendance()" class="w-full bg-rose-50 text-rose-600 hover:bg-rose-100 font-semibold text-xs py-2.5 rounded-xl border border-rose-200 transition">
+                    🔄 Reset / Hapus Semua Data Kehadiran
+                </button>
+            </div>
+
+            <!-- Kartu Daftar Kehadiran -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <div class="flex justify-between items-center pb-4 mb-4 border-b border-slate-100">
+                    <h2 class="font-bold text-slate-800 text-base">Daftar Kehadiran Siswa</h2>
+                    <span id="attendance-count" class="bg-indigo-100 text-indigo-700 font-bold text-xs px-2.5 py-1 rounded-full">
+                        0 Siswa
+                    </span>
+                </div>
+
+                <!-- List Siswa -->
+                <div id="student-list" class="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                    <div class="text-center py-12 text-slate-400">
+                        <p class="text-sm">Belum ada siswa yang mengisi absensi.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- LAYAR SISWA (HP) -->
+        <div id="student-view" class="hidden max-w-md mx-auto">
+            <div class="bg-white p-6 rounded-2xl shadow-lg border border-slate-100">
+                <div class="mb-5 text-center">
+                    <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full inline-block mb-2">
+                        Sesi Presensi AKTIF
+                    </span>
+                    <h2 class="text-lg font-bold text-slate-800">Formulir Kehadiran Siswa</h2>
+                    <p class="text-xs text-slate-500">SMA 8 Gorontalo Utara</p>
+                </div>
+
+                <!-- Form Isi Nama -->
+                <form id="attendance-form" onsubmit="submitAttendance(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap Siswa</label>
+                        <input type="text" id="student-name" required placeholder="Contoh: Ahmad Raihan" class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">NIS / Nomor Absen</label>
+                        <input type="text" inputmode="numeric" id="student-nis" required placeholder="Contoh: 0012345" class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm py-3 rounded-xl shadow-md transition">
+                        Kirim Presensi Sekarang
+                    </button>
+                </form>
+
+                <!-- Pesan Sukses -->
+                <div id="success-msg" class="hidden text-center py-6 space-y-3">
+                    <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
+                        ✓
+                    </div>
+                    <h3 class="text-base font-bold text-slate-800">Presensi Berhasil Terkirim!</h3>
+                    <p class="text-xs text-slate-500">Presensi tersimpan di browser ini. Untuk tampil di laptop guru dari HP, aplikasi perlu dihubungkan ke database online bersama.</p>
+                    <button onclick="resubmitForm()" class="text-xs text-indigo-600 font-semibold hover:underline pt-2 inline-block">
+                        Isi presensi untuk siswa lain
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // localStorage hanya dibagikan oleh tab pada browser/perangkat yang sama.
+        function loadAttendance() {
+            try {
+                const value = JSON.parse(localStorage.getItem('absensi_data_bak') || '[]');
+                return Array.isArray(value) ? value : [];
+            } catch (error) {
+                return [];
+            }
+        }
+
+        let localAttendanceList = loadAttendance();
+
+        setInterval(() => {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('mode') !== 'student') {
+                localAttendanceList = loadAttendance();
+                renderAttendanceList(localAttendanceList);
+            }
+        }, 1500);
+
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'absensi_data_bak') {
+                localAttendanceList = loadAttendance();
+                renderAttendanceList(localAttendanceList);
+            }
+        });
+
+        function switchView(role) {
+            const teacherView = document.getElementById('teacher-view');
+            const studentView = document.getElementById('student-view');
+            const roleBadge = document.getElementById('role-badge');
+            if (role === 'teacher') {
+                teacherView?.classList.remove('hidden');
+                studentView?.classList.add('hidden');
+                if (roleBadge) roleBadge.innerText = 'Modus: Guru (Laptop)';
+            } else {
+                teacherView?.classList.add('hidden');
+                studentView?.classList.remove('hidden');
+                if (roleBadge) roleBadge.innerText = 'Modus: Siswa (HP)';
+            }
+        }
+
+        function generateQRCode() {
+            const container = document.getElementById('qrcode');
+            if (!container) return;
+            container.innerHTML = '';
+            const studentUrl = window.location.href.split('?')[0] + '?mode=student';
+            if (typeof QRCode === 'undefined') {
+                container.textContent = 'QR tidak dapat dimuat. Periksa koneksi internet.';
+                return;
+            }
+            new QRCode(container, {
+                text: studentUrl, width: 170, height: 170,
+                colorDark: '#1e1b4b', colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        function submitAttendance(event) {
+            event.preventDefault();
+            const name = document.getElementById('student-name').value.trim().replace(/\s+/g, ' ');
+            const nis = document.getElementById('student-nis').value.trim();
+            if (!name || !nis) return;
+
+            const record = {
+                name,
+                nis,
+                time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                id: Date.now()
+            };
+
+            // Satu NIS hanya muncul sekali; kiriman terbaru menggantikan catatan sebelumnya.
+            const list = loadAttendance().filter(item => String(item.nis || '').trim() !== nis);
+            list.unshift(record);
+            try {
+                localStorage.setItem('absensi_data_bak', JSON.stringify(list));
+            } catch (error) {
+                alert('Data tidak dapat disimpan di browser ini. Periksa ruang penyimpanan.');
+                return;
+            }
+
+            localAttendanceList = list;
+            const form = document.getElementById('attendance-form');
+            const success = document.getElementById('success-msg');
+            form?.classList.add('hidden');
+            success?.classList.remove('hidden');
+        }
+
+        function resubmitForm() {
+            document.getElementById('student-name').value = '';
+            document.getElementById('student-nis').value = '';
+            document.getElementById('attendance-form')?.classList.remove('hidden');
+            document.getElementById('success-msg')?.classList.add('hidden');
+        }
+
+        function resetAttendance() {
+            if (!confirm('Apakah Anda yakin ingin menghapus semua daftar absensi di browser ini?')) return;
+            localStorage.removeItem('absensi_data_bak');
+            localAttendanceList = [];
+            renderAttendanceList([]);
+        }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[char]);
+        }
+
+        function renderAttendanceList(list) {
+            const container = document.getElementById('student-list');
+            const badge = document.getElementById('attendance-count');
+            const safeList = Array.isArray(list) ? list : [];
+            if (badge) badge.innerText = `${safeList.length} Siswa`;
+            if (!container) return;
+            if (safeList.length === 0) {
+                container.innerHTML = '<div class="text-center py-12 text-slate-400"><p class="text-sm">Belum ada siswa yang mengisi absensi.</p></div>';
+                return;
+            }
+            container.innerHTML = safeList.map((item, index) => `
+                <div class="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <div class="flex items-center gap-3">
+                        <div class="w-7 h-7 bg-indigo-100 text-indigo-700 font-bold rounded-lg flex items-center justify-center text-xs">${safeList.length - index}</div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-800">${escapeHtml(item.name || item.nama || 'Siswa')}</p>
+                            <p class="text-xs text-slate-400">NIS: ${escapeHtml(item.nis || '-')}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs bg-slate-200 text-slate-600 px-2.5 py-1 rounded-md font-mono">${escapeHtml(item.time || '-')}</span>
+                </div>`).join('');
+        }
+
+        window.onload = function() {
+            generateQRCode();
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('mode') === 'student') {
+                switchView('student');
+            } else {
+                switchView('teacher');
+                localAttendanceList = loadAttendance();
+                renderAttendanceList(localAttendanceList);
+            }
+        };
+    </script>
+</body>
+</html>
